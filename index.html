@@ -89,8 +89,8 @@ footer{text-align:center;color:#8290a3;font-size:12px;padding:20px}
 <div class="panel"><div class="row between"><h3>สรุปการลงเวลาวันนี้</h3><button class="secondary" onclick="exportCSV()">ดาวน์โหลด CSV</button></div><div class="tablewrap"><table><thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>เวลาเข้า</th><th>เวลาพัก</th><th>เวลาออก</th><th>สถานะ</th></tr></thead><tbody id="todayRows"></tbody></table></div></div>
 </div>
 <div id="tab-people" class="hidden">
-<div class="panel"><h3>เพิ่มพนักงาน</h3><div class="formgrid"><div><label>รหัสพนักงาน</label><input id="newId" placeholder="เช่น INT002"></div><div><label>ชื่อ-นามสกุล</label><input id="newName" placeholder="ชื่อจริง นามสกุล"></div><div><label>แผนก / สาขา</label><input id="newDept" placeholder="เช่น IT"></div><div><label>รหัสผ่านเริ่มต้น</label><input id="newPass" type="password" placeholder="ตั้งรหัสผ่านให้พนักงาน"></div></div><button style="margin-top:14px" onclick="addIntern()">เพิ่มบัญชี</button></div>
-<div class="panel"><h3>บัญชีพนักงาน</h3><p class="muted">สามารถปิดใช้งานบัญชีชั่วคราว หรือลบบัญชีที่ไม่ใช้แล้วได้ การลบบัญชีจะไม่ลบประวัติการลงเวลาและคำขอเดิม</p><div class="tablewrap"><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>แผนก</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="peopleRows"></tbody></table></div></div>
+<div class="panel"><h3>เพิ่มพนักงาน</h3><div class="formgrid"><div><label>รหัสพนักงาน</label><input id="newId" placeholder="เช่น INT002"></div><div><label>ชื่อ-นามสกุล</label><input id="newName" placeholder="ชื่อจริง นามสกุล"></div><div><label>รหัสผ่านเริ่มต้น</label><input id="newPass" type="password" placeholder="ตั้งรหัสผ่านให้พนักงาน"></div></div><button style="margin-top:14px" onclick="addIntern()">เพิ่มบัญชี</button></div>
+<div class="panel"><h3>บัญชีพนักงาน</h3><p class="muted">สามารถปิดใช้งานบัญชีชั่วคราว หรือลบบัญชีที่ไม่ใช้แล้วได้ การลบบัญชีจะไม่ลบประวัติการลงเวลาและคำขอเดิม</p><div class="tablewrap"><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="peopleRows"></tbody></table></div></div>
 </div>
 <div id="tab-records" class="hidden">
 <div class="panel"><div class="row between"><h3>ประวัติการลงเวลาทั้งหมด</h3><div class="row"><input type="month" id="filterMonth" onchange="renderAdmin()" style="width:auto"><button class="secondary" onclick="exportCSV()">ส่งออก CSV</button></div></div><div class="tablewrap"><table><thead><tr><th>วันที่</th><th>รหัส</th><th>ชื่อ</th><th>เข้า</th><th>ออก</th><th>ชั่วโมง</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="allRows"></tbody></table></div></div>
@@ -150,7 +150,7 @@ async function login(){
   const {data:authData,error:authError}=await supabaseClient.auth.signInWithPassword({email,password});
   if(authError)throw authError;
   const user=authData.user;
-  const {data:profile,error:profileError}=await supabaseClient.from('profiles').select('id,employee_code,full_name,department,role,is_active').eq('id',user.id).single();
+  const {data:profile,error:profileError}=await supabaseClient.from('profiles').select('id,employee_code,full_name,role,is_active').eq('id',user.id).single();
   if(profileError)throw profileError;
   if(profile.is_active===false)throw new Error('บัญชีนี้ถูกปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
   if(role==='admin'&&profile.role!=='admin')throw new Error('บัญชีนี้ไม่มีสิทธิ์ผู้ดูแลระบบ');
@@ -166,13 +166,13 @@ async function loadCloudData(){
  if(attendanceError)throw attendanceError;
  db.records=(attendance||[]).map(r=>({id:r.employee_id,date:r.work_date,checkIn:r.check_in,checkOut:r.check_out,note:r.note}));
  if(session.role==='admin'){
-  const {data:profiles,error:profilesError}=await supabaseClient.from('profiles').select('id,employee_code,full_name,department,role,is_active');
+  const {data:profiles,error:profilesError}=await supabaseClient.from('profiles').select('id,employee_code,full_name,role,is_active');
   if(profilesError)throw profilesError;
-  db.people=(profiles||[]).filter(p=>p.role==='employee').map(p=>({id:p.id,employeeCode:p.employee_code,name:p.full_name,dept:p.department,active:p.is_active!==false}));
+  db.people=(profiles||[]).filter(p=>p.role==='employee').map(p=>({id:p.id,employeeCode:p.employee_code,name:p.full_name,active:p.is_active!==false}));
  }else{
-  const {data:profile,error}=await supabaseClient.from('profiles').select('id,employee_code,full_name,department,is_active').eq('id',session.id).single();
+  const {data:profile,error}=await supabaseClient.from('profiles').select('id,employee_code,full_name,is_active').eq('id',session.id).single();
   if(error)throw error;
-  db.people=[{id:profile.id,employeeCode:profile.employee_code,name:profile.full_name,dept:profile.department,active:profile.is_active!==false}];
+  db.people=[{id:profile.id,employeeCode:profile.employee_code,name:profile.full_name,active:profile.is_active!==false}];
  }
 }
 function openApp(){refreshBreakDisplay();$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');$('welcome').textContent='สวัสดี, '+session.name;$('todayText').textContent=dateTH();$('headerUser').textContent=session.role==='admin'?'ADMIN':'INTERN';$('internView').classList.toggle('hidden',session.role!=='intern');$('adminView').classList.toggle('hidden',session.role!=='admin');if(session.role==='intern')renderIntern();else{if($('workdayDate')&&!$('workdayDate').value)$('workdayDate').value=today();renderAdmin()}}
@@ -186,7 +186,7 @@ $('myLeaves').innerHTML=mine.map(x=>`<tr><td>${x.type}</td><td>${x.start} ถึ
 let mineCorrections=db.corrections.filter(x=>x.id===session.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
 $('myCorrections').innerHTML=mineCorrections.map(x=>`<tr><td>${x.date}</td><td>${x.field==='checkIn'?'เวลาเข้างาน':'เวลาออกงาน'}</td><td>${x.time}</td><td>${escapeHTML(x.reason||'-')}</td><td>${x.status}</td></tr>`).join('')||'<tr><td colspan="5">ยังไม่มีคำขอ</td></tr>';renderCalendar('intern')}
 function showTab(tab,btn){document.querySelectorAll('[id^="tab-"]').forEach(x=>x.classList.add('hidden'));$('tab-'+tab).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');renderAdmin()}
-function addIntern(){let id=$('newId').value.trim(),name=$('newName').value.trim(),pass=$('newPass').value;if(!id||!name||!pass)return alert('กรุณากรอกข้อมูลให้ครบ');if(db.people.some(p=>p.id.toLowerCase()===id.toLowerCase()))return alert('รหัสนี้มีอยู่แล้ว');db.people.push({id,name,pass,dept:$('newDept').value.trim(),active:true});save();['newId','newName','newPass','newDept'].forEach(x=>$(x).value='');renderAdmin();alert('เพิ่มบัญชีเรียบร้อย')}
+function addIntern(){let id=$('newId').value.trim(),name=$('newName').value.trim(),pass=$('newPass').value;if(!id||!name||!pass)return alert('กรุณากรอกข้อมูลให้ครบ');if(db.people.some(p=>p.id.toLowerCase()===id.toLowerCase()))return alert('รหัสนี้มีอยู่แล้ว');db.people.push({id,name,pass,active:true});save();['newId','newName','newPass'].forEach(x=>$(x).value='');renderAdmin();alert('เพิ่มบัญชีเรียบร้อย')}
 function togglePerson(id){let p=db.people.find(x=>x.id===id);if(!p)return;p.active=p.active===false?true:false;save();renderAdmin()}
 function deletePerson(id){
  let p=db.people.find(x=>x.id===id);
@@ -200,7 +200,7 @@ function deletePerson(id){
 function renderAdmin(){if($('breakStart'))$('breakStart').value=db.settings.breakStart||'12:00';if($('breakEnd'))$('breakEnd').value=db.settings.breakEnd||'13:00';if($('startTime'))$('startTime').value=db.settings.start||'08:30';if($('grace'))$('grace').value=db.settings.grace??5;refreshBreakDisplay();let day=db.records.filter(r=>r.date===today());$('sPeople').textContent=db.people.filter(p=>p.active!==false).length;$('sPresent').textContent=day.length;$('sLate').textContent=day.filter(late).length;$('sDone').textContent=day.filter(r=>r.checkOut).length;
 const person=id=>db.people.find(p=>p.id===id)||{name:'บัญชีที่ไม่พบ'};
 $('todayRows').innerHTML=day.map(r=>`<tr><td>${r.id}</td><td>${person(r.id).name}</td><td>${hm(r.checkIn)}</td><td>${breakLabel()}</td><td>${hm(r.checkOut)}</td><td><span class="pill ${late(r)?'late':r.checkOut?'ok':'pending'}">${late(r)?'มาสาย':r.checkOut?'ครบแล้ว':'กำลังทำงาน'}</span></td></tr>`).join('')||'<tr><td colspan="6">ยังไม่มีรายการวันนี้</td></tr>';
-$('peopleRows').innerHTML=db.people.map(p=>`<tr><td>${escapeHTML(p.id)}</td><td>${escapeHTML(p.name)}</td><td>${escapeHTML(p.dept||'—')}</td><td>${p.active===false?'ปิดใช้งาน':'ใช้งาน'}</td><td><div class="row"><button class="secondary" onclick="togglePerson(decodeURIComponent('${encodeURIComponent(p.id)}'))">${p.active===false?'เปิดใช้':'ปิดใช้'}</button><button class="danger" onclick="deletePerson(decodeURIComponent('${encodeURIComponent(p.id)}'))">ลบบัญชี</button></div></td></tr>`).join('')||'<tr><td colspan="5">ยังไม่มีบัญชี</td></tr>';
+$('peopleRows').innerHTML=db.people.map(p=>`<tr><td>${escapeHTML(p.id)}</td><td>${escapeHTML(p.name)}</td><td>${p.active===false?'ปิดใช้งาน':'ใช้งาน'}</td><td><div class="row"><button class="secondary" onclick="togglePerson(decodeURIComponent('${encodeURIComponent(p.id)}'))">${p.active===false?'เปิดใช้':'ปิดใช้'}</button><button class="danger" onclick="deletePerson(decodeURIComponent('${encodeURIComponent(p.id)}'))">ลบบัญชี</button></div></td></tr>`).join('')||'<tr><td colspan="4">ยังไม่มีบัญชี</td></tr>';
 let month=$('filterMonth').value;let rows=db.records.filter(r=>!month||r.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));$('allRows').innerHTML=rows.map(r=>`<tr><td>${r.date}</td><td>${escapeHTML(r.id)}</td><td>${escapeHTML(person(r.id).name)}</td><td>${hm(r.checkIn)}</td><td>${hm(r.checkOut)}</td><td>${duration(r).toFixed(2)}</td><td>${late(r)?'มาสาย':r.checkOut?'ครบแล้ว':'กำลังทำงาน'}</td><td><button class="secondary" onclick="adminEditRecord('${r.id}','${r.date}')">แก้ไขเวลา</button></td></tr>`).join('')||'<tr><td colspan="8">ไม่พบข้อมูล</td></tr>';
 $('leaveAdminRows').innerHTML=db.leaves.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map(x=>`<tr><td>${escapeHTML(person(x.id).name)} (${escapeHTML(x.id)})</td><td>${x.type}</td><td>${x.start} ถึง ${x.end}</td><td>${escapeHTML(x.reason||'-')}</td><td>${x.attachment?`<a href="${x.attachment.data}" download="${escapeHTML(x.attachment.name)}" target="_blank">${escapeHTML(x.attachment.name)}</a>`:'—'}</td><td><span class="pill ${x.status==='อนุมัติ'?'ok':x.status==='ไม่อนุมัติ'?'late':'pending'}">${x.status}</span></td><td>${x.status==='รออนุมัติ'?`<button class="success" onclick="reviewLeave('${x.leaveId}','อนุมัติ')">อนุมัติ</button> <button class="danger" onclick="reviewLeave('${x.leaveId}','ไม่อนุมัติ')">ไม่อนุมัติ</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="7">ยังไม่มีคำขอลา</td></tr>';
 $('correctionAdminRows').innerHTML=db.corrections.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map(x=>`<tr><td>${escapeHTML(person(x.id).name)} (${escapeHTML(x.id)})</td><td>${x.date}</td><td>${x.field==='checkIn'?'เวลาเข้างาน':'เวลาออกงาน'}</td><td>${x.time}</td><td>${escapeHTML(x.reason||'-')}</td><td>${x.status}</td><td>${x.status==='รออนุมัติ'?`<button class="success" onclick="reviewCorrection('${x.requestId}','อนุมัติ')">อนุมัติ</button> <button class="danger" onclick="reviewCorrection('${x.requestId}','ไม่อนุมัติ')">ไม่อนุมัติ</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="7">ยังไม่มีคำขอ</td></tr>';
@@ -283,7 +283,7 @@ function mapCorrection(x){return {requestId:x.id,id:x.employee_id,date:x.work_da
 async function loadCloudData(){
  const [a,p,l,c,w,s]=await Promise.all([
   supabaseClient.from('attendance').select('id,employee_id,work_date,check_in,check_out,note'),
-  supabaseClient.from('profiles').select('id,employee_code,full_name,department,role,is_active'),
+  supabaseClient.from('profiles').select('id,employee_code,full_name,role,is_active'),
   supabaseClient.from('leave_requests').select('*'),
   supabaseClient.from('attendance_correction_requests').select('*'),
   supabaseClient.from('work_calendar').select('*'),
@@ -291,19 +291,19 @@ async function loadCloudData(){
  ]);
  for(const r of [a,p,l,c,w,s])if(r.error)throw r.error;
  db.records=(a.data||[]).map(r=>({id:r.employee_id,date:r.work_date,checkIn:r.check_in,checkOut:r.check_out,note:r.note}));
- db.people=(p.data||[]).filter(x=>x.role==='employee').map(x=>({id:x.id,employeeCode:x.employee_code,name:x.full_name,dept:x.department,active:x.is_active!==false}));
+ db.people=(p.data||[]).filter(x=>x.role==='employee').map(x=>({id:x.id,employeeCode:x.employee_code,name:x.full_name,active:x.is_active!==false}));
  db.leaves=(l.data||[]).map(mapLeave); db.corrections=(c.data||[]).map(mapCorrection);
  db.workdays={};(w.data||[]).forEach(x=>db.workdays[x.work_date]={type:x.day_type==='holiday'?'holiday':'work',note:x.note||''});
  const vals=Object.fromEntries((s.data||[]).map(x=>[x.setting_key,x.setting_value]));
  db.settings={start:vals.attendance?.start||'08:30',grace:Number(vals.attendance?.grace??5),breakStart:vals.lunch_break?.start||'12:00',breakEnd:vals.lunch_break?.end||'13:00'};
 }
 async function addIntern(){
- const code=$('newId').value.trim(),name=$('newName').value.trim(),pass=$('newPass').value,department=$('newDept').value.trim();
+ const code=$('newId').value.trim(),name=$('newName').value.trim(),pass=$('newPass').value;
  if(!code||!name||!pass)return alert('กรุณากรอกรหัสพนักงาน ชื่อ และรหัสผ่าน');
  try{
-  const resp=await fetch('/api/admin-create-user',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await supabaseClient.auth.getSession()).data.session.access_token},body:JSON.stringify({employee_code:code,full_name:name,department,password:pass})});
+  const resp=await fetch('/api/admin-create-user',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await supabaseClient.auth.getSession()).data.session.access_token},body:JSON.stringify({employee_code:code,full_name:name,password:pass})});
   const result=await resp.json();if(!resp.ok)throw new Error(result.error||'สร้างบัญชีไม่สำเร็จ');
-  ['newId','newName','newPass','newDept'].forEach(id=>$(id).value='');await loadCloudData();renderAdmin();alert('สร้างบัญชีพนักงานเรียบร้อย');
+  ['newId','newName','newPass'].forEach(id=>$(id).value='');await loadCloudData();renderAdmin();alert('สร้างบัญชีพนักงานเรียบร้อย');
  }catch(e){alert('เพิ่มพนักงานไม่สำเร็จ: '+e.message+'\nตรวจสอบว่าติดตั้ง API และตั้งค่า SUPABASE_SERVICE_ROLE_KEY ใน Vercel แล้ว')}
 }
 async function togglePerson(id){const p=db.people.find(x=>x.id===id);if(!p)return;const {error}=await supabaseClient.from('profiles').update({is_active:!p.active}).eq('id',id);if(error)return alert(error.message);await loadCloudData();renderAdmin()}
