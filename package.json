@@ -1,0 +1,9 @@
+{
+  "name": "prosupport-attendance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ProSupport employee attendance website with Supabase and Vercel API",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.0"
+  }
+}
